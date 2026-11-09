@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function CreateOrderLines() {
   const [message, setMessage] = useState("");
@@ -19,6 +19,11 @@ export default function CreateOrderLines() {
   const [orderDate, setOrderDate] = useState("");
   /* For open order grid */
   const [selectedOrderId, setSelectedOrderId] = useState("");
+  
+
+
+
+
   /* define line update elements */
   const [orderLineName, setOrderLineName] = useState("");
   const [orderLineResource, setOrderLineResource] = useState("");
@@ -28,17 +33,31 @@ export default function CreateOrderLines() {
   const [orderLineStatus, setOrderLineStatus] = useState("");
   const [orderLineUOM, setOrderLineUOM] = useState("");
   const [orderLineDate, setOrderLineDate] = useState("");
+
+  /*  For line grid control 
+      Holds the order line dta returned from flask 
+      for the line summary grid
+  */
+  const [orderLines, setOrderLines] = useState([]);
+  const [isLoadingOrderLines, setIsLoadingOrderLines] = useState(false);
+  const [orderLinesLoadError, setOrderLinesLoadError] = useState("");
+  const orderLinesRequestId = useRef(0);
+
+  
   /* for on-click event of customer dropdown */
   const handleCustomerChange = async (e) => {
     const selectedCustomerId = e.target.value;
 
     console.log("Customer selected:", selectedCustomerId); 
+  
+
+
   };
 
 
 
   
-  /* Get customers for lookup - start should this be a child componwent of CreateOderLines.jsx */
+  /* Get customers for lookup - start should this be a child component of CreateOderLines.jsx */
   useEffect(() => {
     async function loadCustomers() { 
       try {
@@ -62,7 +81,7 @@ export default function CreateOrderLines() {
     loadCustomers();
   }, []);
 
-  /* Get orders for lookup - start */
+  /* Load orders for selected customer into order level grid start --->*/
   useEffect(() => {
 
   if (!customerId) return;
@@ -100,9 +119,9 @@ export default function CreateOrderLines() {
   }
   loadOrders();
 }, [customerId]);
+  /* Load orders for selected customer into order level grid End< <---*/
 
-
-  /* Submit the order to the backend start */
+  /* Submit the order lime  to the backend start */
   async function handleSubmit(event) {
     event.preventDefault();
     setMessage("");
@@ -172,7 +191,45 @@ export default function CreateOrderLines() {
     }
     /* Submit the order to the backend  end */
   }
-  /* Render the new-order form - start */
+
+  /* Load order lines for selected order */
+async function loadOrderLines(orderId) {
+  const requestId = ++orderLinesRequestId.current;
+  setIsLoadingOrderLines(true);
+  setOrderLines([]);
+  setOrderLinesLoadError("");
+  try {
+    const response = await fetch(`/selectedOrderLines/${orderId}`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.error || `Request failed (${response.status}).`
+      );
+    }
+
+    if (!Array.isArray(result.orderLines)) {
+      throw new Error("The server response did not contain an orderLines list.");
+    }
+
+    if (requestId !== orderLinesRequestId.current) return;
+    setOrderLines(result.orderLines);
+  } catch (error) {
+    if (requestId === orderLinesRequestId.current) {
+      setOrderLinesLoadError(
+        error instanceof Error ? error.message : "Could not load order lines."
+      );
+    }
+  } finally {
+    if (requestId === orderLinesRequestId.current) {
+      setIsLoadingOrderLines(false);
+    }
+  }
+}
+/* Load order lines for selected order into line level grid End< <---*/
+
+  
+    /* Render the new-order form - start */
   
   return (
     <form onSubmit={handleSubmit}>
@@ -200,7 +257,7 @@ export default function CreateOrderLines() {
             {customerLoadError && <p role="alert">{customerLoadError}</p>}
         </div>
         
-        
+        {/* Order grid control */}
         <div>
           <label>Orders:</label>
 
@@ -229,8 +286,10 @@ export default function CreateOrderLines() {
                                   key={order.orderId}
                                   onClick={() => {
                                       setSelectedOrderId(order.orderId);
+                                      loadOrderLines(order.orderId)
                                       setOrderId(order.orderId);
                                       console.log(order.orderId)
+                                      
                                   }}
                                   style={{
                                       cursor: "pointer",
@@ -355,8 +414,54 @@ export default function CreateOrderLines() {
             onChange={(event) => setOrderLineQty(event.target.value)}
             />
           </div>
+        {/* Order lines grid control */}
+        <div>
+          <label><h3>Orders Lines:</h3></label>
 
-        
+              {isLoadingOrderLines ? (
+                  <p>Loading order lines...</p>
+              ) : orderLinesLoadError ? (
+                  <p role="alert">{orderLinesLoadError}</p>
+              ) : !selectedOrderId ? (
+                  <p>Select an order to view its lines.</p>
+              ) : (
+                  <table
+                      style={{
+                          width: "100%",
+                          borderCollapse: "collapse",
+                          marginTop: "10px"
+                      }}
+                  >
+                      <thead>
+                          <tr>
+                              <th>Line name</th>
+                              <th>Unit cost</th>
+                              <th>Quantity</th>
+                              <th>Total</th>
+                          </tr>
+                      </thead>
+
+                      <tbody>
+                          {orderLines.length === 0 ? (
+                              <tr>
+                                  <td colSpan="4">No order lines found for this order.</td>
+                              </tr>
+                          ) : orderLines.map((orderLine) => (
+                              <tr
+                                  key={orderLine.orderlineTableId}
+                              >
+                                  {/* These fields must be an exact match to Flask */}
+                                  <td>{orderLine.orderLineName}</td>
+                                  <td>{orderLine.unitCost}</td>
+                                  <td>{orderLine.qty}</td>
+                                  <td>{orderLine.totalCost}</td>
+                              </tr>
+                          ))}
+                      </tbody>
+                  </table>
+              )}
+          </div>
+          
         </div>
         
 

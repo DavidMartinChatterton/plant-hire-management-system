@@ -11,6 +11,8 @@ export default defineConfig({
       '/customerList': 'http://localhost:5000',
       '/new-order': 'http://localhost:5000',
       '/openOrdersForCustomer': 'http://localhost:5000',
+      '/selectedOrderLines': 'http://localHost:5000',
+      
     },
   },
 })

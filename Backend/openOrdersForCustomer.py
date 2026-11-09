@@ -43,5 +43,5 @@ def get_orders(customerId):
     finally:
         cursor.close()
         conn.close()
-
-    return jsonify({"orders": order_table})
+    
+    return jsonify({"orders": order_table})# orders is the property that flask returns to react

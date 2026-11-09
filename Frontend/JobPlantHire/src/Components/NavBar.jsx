@@ -4,8 +4,7 @@ function NavBar() {
   return (
     <div>
         <nav className="main-nav">
-            <Link to='/NewOrder'> New Order </Link>
-            <Link to='/CreateOrderLines'> Order Lines </Link>
+            <Link to='/CreateOrders'> Create orders </Link>
             <Link to='/ManageOrders'> Manage orders </Link>
            
           
