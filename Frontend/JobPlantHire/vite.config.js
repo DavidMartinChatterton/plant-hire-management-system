@@ -12,6 +12,11 @@ export default defineConfig({
       '/new-order': 'http://localhost:5000',
       '/openOrdersForCustomer': 'http://localhost:5000',
       '/selectedOrderLines': 'http://localHost:5000',
+      '/orderStatusList': 'http://localhost:5000',
+      '/resourceList': 'http://localhost:5000',
+      '/employeeList': 'http://localhost:5000',
+      '/UOMList': 'http://localhost:5000',
+      '/lineStatusList': 'http://localhost:5000'
       
     },
   },

@@ -1,47 +1,27 @@
 
 
 import { useEffect, useState } from "react";
+import OrderLinesAccordion from "./OrderLinesAccordion";
+import CustomerDropdown from "./CustomerDropdown";
+import OrderStatusDropdown from "./OrderStatusDropdown";
+import SaveOrderLineRecord from "./SaveOrderLineRecord";
+
+
+
+
 
 export default function CreateOrders() {
   const [OrderName, setOrderName] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerId, setCustomerId] = useState("");
-  const [customers, setCustomers] = useState([]);
-  const [isLoadingCustomers, setIsLoadingCustomers] = useState(true);
-  const [customerLoadError, setCustomerLoadError] = useState("");
   const [OrderDate, setOrderDate] = useState("");
   const [orderNotes, setOrderNotes] = useState("");
-  const [orderStatus, setOrderStatus] = useState("");
- 
-  /* Get customers for lookup - start */
-  useEffect(() => {
-    async function loadCustomers() { 
-       
-      try {
-        const response = await fetch("/customerList");
-        const result = await response.json();
+  const [orderStatusId, setOrderStatusId] = useState("");
 
-        if (!response.ok) {
-          throw new Error(result.error || `Request failed (${response.status}).`);
-        }
-
-        setCustomers(result.customers);
-      } catch (error) {
-        setCustomerLoadError(
-          error instanceof Error ? error.message : "Could not load customers.",
-        );
-      } finally {
-        setIsLoadingCustomers(false);
-      }
-    }
-
-    loadCustomers();
-  }, []);
   
-/* Get customers for lookup - end*/
 
-/* Submit the order to the backend start */
+  /* Submit the order to the backend start */
   async function handleSubmit(event) {
     event.preventDefault();
     setMessage("");
@@ -51,18 +31,18 @@ export default function CreateOrders() {
       setMessage("Enter order name.");
       return;
     }
-    
+
     setIsSubmitting(true);
     try {
       const response = await fetch("/new-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           orderName: name,
-          customerId,
+          customerId: customerId,     /* From CustomerDropdown Line 130 */ 
           orderDate: OrderDate,
           orderNotes: orderNotes,
-          orderStatus: orderStatus
+          orderStatus: orderStatusId  /* from OrderStatusDropdown Line 131*/
         }),
       });
       let result;
@@ -84,7 +64,7 @@ export default function CreateOrders() {
       setCustomerId("");
       setOrderDate("");
       setOrderNotes("");
-      setOrderStatus("");
+      setOrderStatusId("");
 
     } catch (error) {
       setMessage(
@@ -100,88 +80,55 @@ export default function CreateOrders() {
   /* Render the new-order form - start */
   return (
     <form onSubmit={handleSubmit}>
+      <div>
+        <label htmlFor="OrderName">Order name: </label>
+        <input
+          id="OrderName"
+          name="OrderName"
+          type="text"
+          autoComplete="name"
+          placeholder="Enter order name"
+          value={OrderName}
+          onChange={(event) => setOrderName(event.target.value)}
+        />
+      </div>
+      <CustomerDropdown value={customerId} onChange={setCustomerId}/>           {/* Get value form CustomerDropdown component */}
+      <OrderStatusDropdown value={orderStatusId} onChange={setOrderStatusId}/>  {/* Get value form OrderStatusDropdown component */}
+      <div>
+        <label htmlFor="OrderDate">Order date:</label>
+        <input
+          id="OrderDate"
+          name="OrderDate"
+          type="date"
+          autoComplete="date"
+          value={OrderDate}
+          onChange={(event) => setOrderDate(event.target.value)}
+          required
+        />
+      </div>
 
-        <div>
-            <label htmlFor="OrderName">Order name: </label>
-            <input
-            id="OrderName"
-            name="OrderName"
-            type="text"
-            autoComplete="name"
-            placeholder="Enter order name"
-            value={OrderName}
-            onChange={(event) => setOrderName(event.target.value)}
-            />
-        </div>
-    
-        <div>
-            <label htmlFor="customerId">Customer:</label>
-            <select
-              id="customerId"
-              name="customerId"
-              value={customerId}
-              onChange={(event) => setCustomerId(event.target.value)}
-              disabled={isLoadingCustomers || Boolean(customerLoadError)}
-              required
-            >
-              <option value="">
-                {isLoadingCustomers ? "Loading customers..." : "Select a customer"}
-              </option>
-              {customers.map((customer) => (
-                <option key={customer.customerId} value={customer.customerId}>
-                  {customer.customerName}
-                </option>
-              ))}
-            </select>
-            {customerLoadError && <p role="alert">{customerLoadError}</p>}
-        </div>
-
-        <div>
-            <label htmlFor="OrderDate">Order date:</label>
-            <input
-            id="OrderDate"
-            name="OrderDate"
-            type="date"
-            autoComplete="date"
-            value={OrderDate}
-            onChange={(event) => setOrderDate(event.target.value)}
-            required
-            />
-        </div>
-
-        <div>
-            <label htmlFor="orderNotes">Order text:</label>
-            <input
-            id="orderNotes"
-            name="orderNotes"
-            type="text"
-            value={orderNotes}
-            onChange={(event) => setOrderNotes(event.target.value)}
-            required
-            />
-        </div>
-
-        <div>
-            <label htmlFor="orderStatus">Order status:</label>
-            <input
-            id="orderStatus"
-            name="orderStatus"
-            type="text"
-            value={orderStatus}
-            onChange={(event) => setOrderStatus(event.target.value)}
-            required
-            />
-        </div>
-      
-     
+      <div>
+        <label htmlFor="orderNotes">Order text:</label>
+        <input
+          id="orderNotes"
+          name="orderNotes"
+          type="text"
+          value={orderNotes}
+          onChange={(event) => setOrderNotes(event.target.value)}
+          required
+        />
+      </div>
 
       <button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Adding..." : "Create new order"}
       </button>
       {message && <p role="status">{message}</p>}
+
+       <OrderLinesAccordion />
+       
     </form>
   );
-   /* Render the new-order form - end  */
+  /* Render the new-order form - end  */
+
 }
 
-    
