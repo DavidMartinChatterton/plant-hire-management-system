@@ -1,32 +1,25 @@
-
-
 import { useEffect, useState } from "react";
 import OrderLinesAccordion from "./OrderLinesAccordion";
 import CustomerDropdown from "./CustomerDropdown";
 import OrderStatusDropdown from "./OrderStatusDropdown";
-import SaveOrderLineRecord from "./SaveOrderLineRecord";
-
-
-
-
+import LineGridAccordian from "./LineGridAccordion";
 
 export default function CreateOrders() {
-  const [OrderName, setOrderName] = useState("");
+  const [orderName, setOrderName] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerId, setCustomerId] = useState("");
   const [OrderDate, setOrderDate] = useState("");
   const [orderNotes, setOrderNotes] = useState("");
   const [orderStatusId, setOrderStatusId] = useState("");
-
-  
+  const [selectedOrderId, setOrderId] = useState(null);
 
   /* Submit the order to the backend start */
   async function handleSubmit(event) {
     event.preventDefault();
     setMessage("");
 
-    const name = OrderName.trim();
+    const name = orderName.trim();
     if (!name) {
       setMessage("Enter order name.");
       return;
@@ -39,10 +32,10 @@ export default function CreateOrders() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orderName: name,
-          customerId: customerId,     /* From CustomerDropdown Line 130 */ 
+          customerId: customerId,     /* From CustomerDropdown */ 
           orderDate: OrderDate,
           orderNotes: orderNotes,
-          orderStatus: orderStatusId  /* from OrderStatusDropdown Line 131*/
+          orderStatus: orderStatusId  /* from OrderStatusDropdown */
         }),
       });
       let result;
@@ -60,12 +53,17 @@ export default function CreateOrders() {
       }
 
       setMessage(result.message || "New order created successfully.");
-      setOrderName("");
-      setCustomerId("");
-      setOrderDate("");
-      setOrderNotes("");
-      setOrderStatusId("");
 
+      // 1. Log the full response object to verify keys returned from Flask
+      console.log("Full backend response object:", result);
+
+      // 2. Extract and assign the foreign key using correct variable name (fixed typo)
+      const newOrderId = result.orderId;
+      setOrderId(newOrderId);
+
+      // 3. Optional debug logs
+      console.log("Newly assigned order ID:", newOrderId);
+      
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -75,25 +73,27 @@ export default function CreateOrders() {
     } finally {
       setIsSubmitting(false);
     }
-    /* Submit the order to the backend  end */
   }
+
   /* Render the new-order form - start */
   return (
     <form onSubmit={handleSubmit}>
       <div>
-        <label htmlFor="OrderName">Order name: </label>
+        <label htmlFor="orderName">Order name: </label>
         <input
-          id="OrderName"
-          name="OrderName"
+          id="orderName"
+          name="orderName"
           type="text"
           autoComplete="name"
           placeholder="Enter order name"
-          value={OrderName}
+          value={orderName}
           onChange={(event) => setOrderName(event.target.value)}
         />
       </div>
-      <CustomerDropdown value={customerId} onChange={setCustomerId}/>           {/* Get value form CustomerDropdown component */}
-      <OrderStatusDropdown value={orderStatusId} onChange={setOrderStatusId}/>  {/* Get value form OrderStatusDropdown component */}
+
+      <CustomerDropdown value={customerId} onChange={setCustomerId}/>           
+      <OrderStatusDropdown value={orderStatusId} onChange={setOrderStatusId}/>  
+
       <div>
         <label htmlFor="OrderDate">Order date:</label>
         <input
@@ -122,13 +122,15 @@ export default function CreateOrders() {
       <button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Adding..." : "Create new order"}
       </button>
+
       {message && <p role="status">{message}</p>}
 
-       <OrderLinesAccordion />
+      {/* Render the accordion and pass down the active primary key as a foreign key */}
+      <OrderLinesAccordion selectedOrderId={selectedOrderId} />
+      <LineGridAccordian  selectedOrderId={selectedOrderId}/>
+      
+      
        
     </form>
   );
-  /* Render the new-order form - end  */
-
 }
-

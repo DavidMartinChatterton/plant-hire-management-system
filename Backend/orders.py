@@ -41,6 +41,7 @@ def add_order():
                 NOTES,
                 orderStatusTableId )
                 VALUES (%s, %s, %s, %s, %s)
+                 RETURNING orderTableId; -- <-- THIS IS THE MAGIC FIX FOR POSTGRESQL
                 """,
             (order_name.strip(), 
              customer_id, 
@@ -49,9 +50,15 @@ def add_order():
              order_status)
         )
         conn.commit()
+
+        new_order_id = cursor.fetchone()[0]
+
     
     finally:
         cursor.close()
         conn.close()
 
-    return jsonify({"message": "New order created successfully."}), 201
+    return jsonify({
+        "message": "New order created successfully.", 
+        "orderId": new_order_id  
+    }), 201
